@@ -5,14 +5,13 @@
   Может показывать текущую скорость
   Может тормозить (сбрасывать скорость до нуля)
   Может показывать количество вагонов
-
   Может прицеплять/отцеплять вагоны (по одному вагону за операцию, метод просто увеличивает или уменьшает количество вагонов).
   Прицепка/отцепка вагонов может осуществляться только если поезд не движется.
-
   Может принимать маршрут следования (объект класса Route)
   Может перемещаться между станциями, указанными в маршруте.
   Показывать предыдущую станцию, текущую, следующую, на основе маршрута
 =end
+
 require_relative 'producer'
 require_relative 'string_generator'
 
@@ -20,10 +19,10 @@ class Train
   include Producer
   include StringGenerator
 
-  attr_reader :number
-  attr_reader :speed
-  attr_accessor :wagons
-  attr_reader :type
+  attr_reader :speed, :type
+  attr_accessor :wagons, :number
+
+  NUMBER_FORMAT = /^([a-z]|[1-9]){3}(-)?([a-z]|[1-9]){2}$/i.freeze
 
   @@trains = {}
 
@@ -32,10 +31,15 @@ class Train
     @speed = 0
     @@trains[number] = self
     @wagons = []
+    validate!
   end
 
   def self.find(number)
     @@trains[number]
+  end
+
+  def iterate_wagons(&block)
+    wagons.each { |wagon| block.call(wagon) } if block_given?
   end
 
   def uncouple_wagon
@@ -44,11 +48,9 @@ class Train
   end
 
   def move_to_rote(route)
-    return puts 'Add wagons or stop train' unless conditions?
+    return 'Stop train and add wagons' unless conditions?
 
-    puts "Route stations #{route.station_list}"
-    puts "starts from station #{route.stations.first.name}"
-
+    puts "Route stations #{route.station_list}. #{number} starts from station #{route.stations.first.name}"
     pass_route(route)
   end
 
@@ -68,34 +70,76 @@ class Train
     speed_zero? && wagons_any?
   end
 
-  protected
-
-  attr_writer :speed
-
-  def average_speed
-    10
+  def valid?
+    validate!
+  rescue StandardError
+    false
   end
 
+  def train_info
+    { number: number, type: type, wagon_size: wagons.size }
+  end
+
+  protected
+
   def pass_route(route)
-    route.stations.each do |s|
+    route.stations.each do |station|
       speed_up
-      slow_down
-      puts "arrived to station #{s.name}"
-      s.get_train(number, type)
-      p s.train_list_by_type(type)
-      s.send_train(number)
-      p s.train_list_by_type(type)
-      s == route.stations.last ? (puts "arrived to last station #{s.name} #{slow_down}") : (puts "departure from station #{s.name}")
+      stop
+      puts "#{number} arrives to station #{station.name}"
+      station.get_train(number, self)
+      return_station_info_message(station)
+      station.send_train(number)
+      return_movement_message(route, station)
     end
   end
 
-  def slow_down
-    self.speed = 0
-    puts "Speed is #{speed}"
+  def stop
+    while speed.positive?
+      speed -= speed_change
+      speed = 0 if speed.negative?
+      show_speed
+    end
+  end
+
+  def speed_change
+    10
   end
 
   def speed_up
-    self.speed = average_speed
-    puts "Speed is #{average_speed}"
+    self.speed += 10
+    show_speed
+  end
+
+  def show_speed
+    puts "Speed is #{self.speed}"
+  end
+
+  def validate!
+    raise 'Number length should be unless 5 symbols' if number.to_s.length < 5
+    raise 'Number should match the format (/^([a-z]|[1-9]){3}(-)?([a-z]|[1-9]){2}$/i)' if number !~ NUMBER_FORMAT
+
+    true
+  rescue StandardError => e
+    error_message = e.message
+    puts "Validation error: #{error_message}"
+  end
+
+  def return_movement_message(route, station)
+    if station == route.stations.last
+      puts "#{number} arrives to last station #{station.name}"
+    else
+      puts "#{number} departures from station #{station.name}"
+    end
+  end
+
+  def return_station_info_message(station)
+    puts "Station #{station.name} info: #{
+      station.iterate_trains do |number, value|
+        station.train_list[number].train_info
+
+        value.iterate_wagons(&:wagon_info)
+      end
+    }"
   end
 end

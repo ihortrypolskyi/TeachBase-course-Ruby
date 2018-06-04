@@ -22,8 +22,8 @@ class Station
     @@stations
   end
 
-  def get_train(train_number, type)
-    @train_list[train_number] = type
+  def get_train(train_number, train)
+    @train_list[train_number] = train
   end
 
   def send_train(train_number)
@@ -32,5 +32,9 @@ class Station
 
   def train_list_by_type(type)
     @train_list.map { |k, v| k if v == type }
+  end
+
+  def iterate_trains(&block)
+    train_list.each { |number, value| block.call(number, value) } if block_given?
   end
 end

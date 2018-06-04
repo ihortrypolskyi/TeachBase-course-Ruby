@@ -1,4 +1,6 @@
-require "openssl"
+# frozen_string_literal: true
+
+require 'openssl'
 
 module StringGenerator
   def random_string
