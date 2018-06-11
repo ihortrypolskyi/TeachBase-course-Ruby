@@ -8,7 +8,14 @@
 =end
 
 class Station
+  include Validation
+  include Accessors
+
   attr_reader :train_list, :name
+
+  validate :name, :presence
+  validate :name, :type, String
+  validate :train_list, :type, Hash
 
   @@stations = []
 

@@ -10,7 +10,12 @@
 =end
 
 class Route
+  include Validation
+
   attr_reader :stations
+
+  validate :stations, :presence
+  validate :stations, :type, Array
 
   def initialize(first_station, last_station)
     @stations = [first_station, last_station]

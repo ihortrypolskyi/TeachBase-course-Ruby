@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require_relative '../part_9_hw(metaprogramming)/accessors'
+require_relative '../part_9_hw(metaprogramming)/validation'
 require_relative 'station'
 require_relative 'route'
 require_relative 'wagon'

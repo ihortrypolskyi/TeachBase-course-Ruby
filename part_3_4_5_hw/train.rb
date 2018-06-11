@@ -18,11 +18,17 @@ require_relative 'string_generator'
 class Train
   include Producer
   include StringGenerator
+  include Validation
 
-  attr_reader :speed, :type
-  attr_accessor :wagons, :number
+  attr_reader :type
+  attr_accessor :speed, :wagons, :number
 
-  NUMBER_FORMAT = /^([a-z]|[1-9]){3}(-)?([a-z]|[1-9]){2}$/i.freeze
+  validate :speed, :presence
+  validate :number, :presence
+  validate :speed, :type, Integer
+  validate :type, :type, String
+
+  #NUMBER_FORMAT = /^([a-z]|[1-9]){3}(-)?([a-z]|[1-9]){2}$/i.freeze
 
   @@trains = {}
 
@@ -31,7 +37,7 @@ class Train
     @speed = 0
     @@trains[number] = self
     @wagons = []
-    validate!
+    #validate!
   end
 
   def self.find(number)
@@ -70,11 +76,11 @@ class Train
     speed_zero? && wagons_any?
   end
 
-  def valid?
-    validate!
-  rescue StandardError
-    false
-  end
+  #def valid?
+  #  validate!
+  #rescue StandardError
+  #  false
+  #end
 
   def train_info
     { number: number, type: type, wagon_size: wagons.size }
@@ -96,8 +102,8 @@ class Train
 
   def stop
     while speed.positive?
-      speed -= speed_change
-      speed = 0 if speed.negative?
+      self.speed -= speed_change
+      self.speed = 0 if speed.negative?
       show_speed
     end
   end
@@ -115,15 +121,15 @@ class Train
     puts "Speed is #{self.speed}"
   end
 
-  def validate!
-    raise 'Number length should be unless 5 symbols' if number.to_s.length < 5
-    raise 'Number should match the format (/^([a-z]|[1-9]){3}(-)?([a-z]|[1-9]){2}$/i)' if number !~ NUMBER_FORMAT
-
-    true
-  rescue StandardError => e
-    error_message = e.message
-    puts "Validation error: #{error_message}"
-  end
+  #def validate!
+  #  raise 'Number length should be unless 5 symbols' if number.to_s.length < 5
+  #  raise 'Number should match the format (/^([a-z]|[1-9]){3}(-)?([a-z]|[1-9]){2}$/i)' if number !~ NUMBER_FORMAT
+  #
+  #  true
+  #rescue StandardError => e
+  #  error_message = e.message
+  #  puts "Validation error: #{error_message}"
+  #end
 
   def return_movement_message(route, station)
     if station == route.stations.last
